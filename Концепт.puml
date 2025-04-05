@@ -1,0 +1,81 @@
+@startuml
+title Концептуальная архитектура приложения для спортсменов
+skinparam linetype ortho
+
+skinparam component {
+    FontStyle bold
+    StereotypeFontStyle italic
+    StereotypeFontSize 12
+    BackgroundColor LightBlue
+}
+skinparam database {
+    FontStyle bold
+    StereotypeFontStyle italic
+    StereotypeFontSize 12
+    BackgroundColor LemonChiffon
+}
+skinparam queue {
+    FontStyle bold
+    StereotypeFontStyle italic
+    StereotypeFontSize 12
+    BackgroundColor Lavender
+}
+
+skinparam storage {
+    FontStyle bold
+    StereotypeFontStyle italic
+    StereotypeFontSize 12
+    BackgroundColor HoneyDew
+}
+actor Пользователь as user
+
+package "Устройство пользователя"{
+    component "Приложение компании" as app <<Мобильное приложение>>
+    component "Фитнес-функции телефона" as fit_function <<Информация с датчиков>>  #LightGray
+    component "Внешние фитнес-устройства" as fit_gadget <<Информация с датчиков>>  #LightGray
+    component "Существующие приложения компании" as our_apps <<Deeplink и обмен данными>>
+}
+
+cloud "Облачная инфраструктура" {
+    component "API-Gateway" as api <<Внешний интеграционный шлюз>>
+    component "Сервис социальной сети" as social <<Чаты и сообщества>>
+    component "Сервис тренировок" as training <<Упражнения, тренировки и соревнования>>
+    component "Сервис рекомендаций" as promo <<Промоакции, предложения событий и покупок>>
+    component "Сервис геймификации" as gaming <<Ачивки и достижения>>
+    component "Сервис пользователя" as user_service <<Профили, связи, друзья>>
+    component "Сервис инвентаря" as inventar <<Инвентарь, покупки>>
+    component "Сервис интеграции" as integration <<Обработка данных с датчиков>>
+
+    queue "Брокер" as broker <<Гарантированная доставка \n сообщений>>
+
+    database "NoSQL БД\n(активность, социальный граф)" as NoSQLDB
+    database "SQL БД\n(транзакции, инвентарь)" as SQLDB
+}
+
+user --> app
+app -L-> fit_function
+app -R-> fit_gadget
+app -D-> our_apps
+app -D---> api
+
+api -D-> broker
+api -D-> user_service
+api -D-> social
+user_service -U-> broker
+training -U-> broker
+promo -U-> api
+gaming -U-> broker
+inventar -U-> broker
+integration -U-> broker
+
+NoSQLDB -U-> gaming
+NoSQLDB -U-> social
+NoSQLDB -U-> integration
+
+SQLDB -U-> user_service
+SQLDB -U-> training
+SQLDB -U-> inventar
+SQLDB -U-> promo
+
+
+@enduml
