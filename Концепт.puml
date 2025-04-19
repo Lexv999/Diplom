@@ -1,9 +1,9 @@
 @startuml Концептуальная архитектура
 
-!define RECTANGLE class
+!define RECTANGLE component
 skinparam linetype ortho
 skinparam backgroundColor white
-skinparam class {
+skinparam component {
     BackgroundColor LightBlue
     BorderColor DarkBlue
     ArrowColor DarkBlue
