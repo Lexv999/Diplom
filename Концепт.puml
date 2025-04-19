@@ -1,81 +1,115 @@
-@startuml
-title Концептуальная архитектура приложения для спортсменов
+@startuml Концептуальная архитектура
+
+!define RECTANGLE class
 skinparam linetype ortho
-
-skinparam component {
-    FontStyle bold
-    StereotypeFontStyle italic
-    StereotypeFontSize 12
+skinparam backgroundColor white
+skinparam class {
     BackgroundColor LightBlue
-}
-skinparam database {
-    FontStyle bold
-    StereotypeFontStyle italic
-    StereotypeFontSize 12
-    BackgroundColor LemonChiffon
-}
-skinparam queue {
-    FontStyle bold
-    StereotypeFontStyle italic
-    StereotypeFontSize 12
-    BackgroundColor Lavender
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
 }
 
-skinparam storage {
-    FontStyle bold
-    StereotypeFontStyle italic
-    StereotypeFontSize 12
-    BackgroundColor HoneyDew
-}
-actor Пользователь as user
-
-package "Устройство пользователя"{
-    component "Приложение компании" as app <<Мобильное приложение>>
-    component "Фитнес-функции телефона" as fit_function <<Информация с датчиков>>  #LightGray
-    component "Внешние фитнес-устройства" as fit_gadget <<Информация с датчиков>>  #LightGray
-    component "Существующие приложения компании" as our_apps <<Deeplink и обмен данными>>
+' Основные компоненты
+package "Клиентские приложения" {
+    RECTANGLE "Мобильное приложение\n(iOS/Android)" as mobile
+    RECTANGLE "Веб-портал\nдля спортсменов" as web
+    RECTANGLE "Административный\nпортал" as admin
 }
 
+package "API Gateway" {
+    RECTANGLE "API Gateway" as gateway
+}
+
+package "Бэкенд-сервисы" {
+    RECTANGLE "Сервис аутентификации\nи авторизации" as auth
+    RECTANGLE "Сервис пользователей\nи профилей" as user
+    RECTANGLE "Сервис социальных\nвзаимодействий" as social
+    RECTANGLE "Сервис тренировок\nи статистики" as training
+    RECTANGLE "Сервис рекомендаций" as recommendations
+    RECTANGLE "Сервис уведомлений" as notifications
+}
+
+package "Интеграционные сервисы" {
+    RECTANGLE "Сервис интеграции\nс внешними устройствами" as devices
+    RECTANGLE "Сервис интеграции\nс социальными сетями" as social_networks
+    RECTANGLE "Сервис интеграции\nс платежными системами" as payments
+    RECTANGLE "Сервис интеграции\nс магазином" as store
+    RECTANGLE "Сервис интеграции\nс медицинскими системами" as medical
+}
+
+package "Хранение данных" {
+    RECTANGLE "MongoDB\n(социальный граф,\nконтент)" as mongodb
+    RECTANGLE "PostgreSQL\n(пользователи,\nтранзакции)" as postgres
+    RECTANGLE "Redis\n(кэш, сессии)" as redis
+    RECTANGLE "S3\n(медиа-контент)" as s3
+    RECTANGLE "Медицинское\nхранилище" as medical_storage
+}
+
+' Связи между компонентами
+mobile --> gateway
+web --> gateway
+admin --> gateway
+
+gateway --> auth
+gateway --> user
+gateway --> social
+gateway --> training
+gateway --> recommendations
+gateway --> notifications
+
+auth --> user
+user --> social
+user --> training
+training --> recommendations
+recommendations --> notifications
+
+auth --> devices
+auth --> social_networks
+auth --> payments
+auth --> store
+auth --> medical
+
+devices --> training
+social_networks --> social
+payments --> store
+medical --> medical_storage
+
+user --> postgres
+social --> mongodb
+training --> postgres
+training --> mongodb
+notifications --> redis
+store --> s3
+medical --> medical_storage
+
+' Инфраструктура
 cloud "Облачная инфраструктура" {
-    component "API-Gateway" as api <<Внешний интеграционный шлюз>>
-    component "Сервис социальной сети" as social <<Чаты и сообщества>>
-    component "Сервис тренировок" as training <<Упражнения, тренировки и соревнования>>
-    component "Сервис рекомендаций" as promo <<Промоакции, предложения событий и покупок>>
-    component "Сервис геймификации" as gaming <<Ачивки и достижения>>
-    component "Сервис пользователя" as user_service <<Профили, связи, друзья>>
-    component "Сервис инвентаря" as inventar <<Инвентарь, покупки>>
-    component "Сервис интеграции" as integration <<Обработка данных с датчиков>>
-
-    queue "Брокер" as broker <<Гарантированная доставка \n сообщений>>
-
-    database "NoSQL БД\n(активность, социальный граф)" as NoSQLDB
-    database "SQL БД\n(транзакции, инвентарь)" as SQLDB
+    package "Kubernetes" {
+        RECTANGLE "Kubernetes\nCluster" as k8s
+    }
+    
+    package "Мониторинг" {
+        RECTANGLE "Prometheus\n+ Grafana" as monitoring
+        RECTANGLE "ELK Stack" as logging
+        RECTANGLE "Jaeger" as tracing
+    }
 }
 
-user --> app
-app -L-> fit_function
-app -R-> fit_gadget
-app -D-> our_apps
-app -D---> api
+k8s --> gateway
+k8s --> auth
+k8s --> user
+k8s --> social
+k8s --> training
+k8s --> recommendations
+k8s --> notifications
+k8s --> devices
+k8s --> social_networks
+k8s --> payments
+k8s --> store
+k8s --> medical
 
-api -D-> broker
-api -D-> user_service
-api -D-> social
-user_service -U-> broker
-training -U-> broker
-promo -U-> api
-gaming -U-> broker
-inventar -U-> broker
-integration -U-> broker
+monitoring --> k8s
+logging --> k8s
+tracing --> k8s
 
-NoSQLDB -U-> gaming
-NoSQLDB -U-> social
-NoSQLDB -U-> integration
-
-SQLDB -U-> user_service
-SQLDB -U-> training
-SQLDB -U-> inventar
-SQLDB -U-> promo
-
-
-@enduml
+@enduml 
